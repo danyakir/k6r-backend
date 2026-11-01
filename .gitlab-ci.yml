@@ -1,0 +1,27 @@
+variables:
+  APP_VERSION:
+    value: ''
+    description: 'Add only on sealed versions'
+
+stages:
+  - build
+
+build:
+  stage: build
+  image: registry.example.com/k6r/git-helm-oc-yq-jq
+  script:
+    - oc login $OPENSHIFT_URL --token=$OPENSHIFT_TOKEN --insecure-skip-tls-verify
+    - oc project $OPENSHIFT_PROJECT_NAME
+    - BUILD_CONFIG_NAME=$([[ -n "${APP_VERSION}" ]] && echo "k6-cloud-runner-server-prod" || echo "k6-cloud-runner-server")
+    - if [[ -n "${APP_VERSION}" ]]; then oc delete buildconfig/k6-cloud-runner-server-prod --ignore-not-found; else oc delete buildconfig/k6-cloud-runner-server --ignore-not-found; fi;
+    - PULLED_VERSION=$(oc get bc k6-cloud-runner-server-prod -o jsonpath='{.metadata.labels.APP_VERSION}' --ignore-not-found)
+    - PULLED_VERSION="${PULLED_VERSION:-0.0.0}-dev-${CI_PIPELINE_ID}"
+    - NEW_APP_VERSION=${APP_VERSION:-$PULLED_VERSION}
+    - echo build config name $BUILD_CONFIG_NAME
+    - echo app version is $NEW_APP_VERSION
+    - echo "Building Dockerfile-based application..."
+    - oc new-build --name=$BUILD_CONFIG_NAME --labels="keepalive=true,APP_VERSION=$NEW_APP_VERSION" --env APP_VERSION=$NEW_APP_VERSION --strategy=docker --to=registry.example.com/k6r/k6-cloud-runner:$NEW_APP_VERSION --push-secret=$REGISTRY_MD_SECRET_NAME -e APP_VERSION=$NEW_APP_VERSION --to-docker --binary
+    - oc start-build $BUILD_CONFIG_NAME --from-dir=. --wait --follow
+    - oc delete buildconfig/k6-cloud-runner-server --ignore-not-found
+  artifacts:
+    expire_in: 1 hours

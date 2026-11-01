@@ -1,0 +1,5 @@
+.gitlab
+build
+node_modules
+dist
+.gitlab-ci.yml

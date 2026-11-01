@@ -1,0 +1,55 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model groups {
+  id                         String                   @id @default(dbgenerated("encode(gen_random_bytes(4), 'hex'::text)"))
+  name                       String                   @unique(map: "unique_name_constraint")
+  gitlabUrl                  String?                  @map("gitlab_url")
+  gitlabToken                String?                  @map("gitlab_token") 
+  ocUrl                      String?                  @map("oc_url") 
+  ocToken                    String?                  @map("oc_token")
+  ocNamespace                String?                  @map("oc_namespace")
+  scriptsRoute               String?                  @map("scripts_route")
+  prometheusUrl              String?                  @map("prometheus_url")
+  branchName                 String?                  @map("branch_name")
+  enviormentParams           Json                     @map("env") @default("[]")
+  history                    history[] 
+  scripts                    scripts[]
+}
+
+model history {
+  id                         String                   @id(map: "history_pkey1") @default(dbgenerated("encode(gen_random_bytes(4), 'hex'::text)"))
+  name                       String
+  startTime                  DateTime                 @default(now()) @map("start_time") @db.Timestamptz(6)
+  endTime                    DateTime?                @map("end_time")
+  maxVus                     Decimal?                 @map("max_vus")
+  responseTime               String?                  @map("response_time")
+  status                     status_enum              @default(running)
+  group_name                 String
+  groups                     groups                   @relation(fields: [group_name], references: [name], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model scripts {
+  id                         String                   @id(map: "scripts_pkey1") @default(dbgenerated("encode(gen_random_bytes(4), 'hex'::text)"))
+  name                       String
+  description                String?
+  memory                     Decimal                  @default(1) @db.Decimal
+  cpu                        Decimal                  @default(1) @db.Decimal
+  lastRun                    DateTime?                @db.Timestamptz(6) @map("last_run")
+  isRunning                  Boolean                  @default(false) @map("is_running")
+  group_name                 String
+  groups                     groups                   @relation(fields: [group_name], references: [name], onDelete: NoAction, onUpdate: NoAction)
+}
+
+enum status_enum {
+  running
+  completed
+  failed
+  aborted
+}

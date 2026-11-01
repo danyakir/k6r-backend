@@ -1,0 +1,5 @@
+.gitlab
+.vscode
+build
+node_modules
+dist

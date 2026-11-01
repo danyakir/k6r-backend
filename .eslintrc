@@ -1,0 +1,43 @@
+{
+    "env": { "node": true },
+    "globals": {
+        "console": "readonly",
+        "process": "readonly"
+    },
+    "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/recommended",
+        "plugin:@typescript-eslint/eslint-recommended"
+    ],
+    "parser": "@typescript-eslint/parser",
+    "plugins": ["@typescript-eslint/eslint-plugin", "import"],
+    "rules": {
+        "@typescript-eslint/no-unused-vars": [
+            "warn",
+            { "argsIgnorePattern": "^_" }
+        ],
+        "import/order": [
+            "error",
+            {
+                "groups": [
+                    ["builtin", "external"],
+                    ["internal"],
+                    ["parent", "sibling", "index"]
+                ],
+                "pathGroups": [
+                    {
+                        "pattern": "@{utils,definitions,schemas,logger,errors}",
+                        "group": "internal",
+                        "position": "after"
+                    }
+                ],
+                "pathGroupsExcludedImportTypes": ["builtin"],
+                "alphabetize": {
+                    "order": "asc",
+                    "caseInsensitive": true
+                },
+                "newlines-between": "always"
+            }
+        ]
+    }
+}
